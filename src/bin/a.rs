@@ -9,25 +9,25 @@ pub fn get_stdin_line() -> String {
 }
 
 fn main() {
-    let (N, K) = get_stdin_line().split(' ')
+    let (n, k) = get_stdin_line().split(' ')
         .map(|x| x.to_string())
         .map(|x| x.parse::<usize>().unwrap())
         .collect_tuple()
         .unwrap();
-    let mut A = get_stdin_line().split(' ')
+    let mut a = get_stdin_line().split(' ')
         .map(|x| x.to_string())
         .map(|x| x.parse::<u16>().unwrap())
         .collect::<Vec<_>>();
-    assert_eq!(A.len(), N);
+    assert_eq!(a.len(), n);
     let mut start = 0;
 
-    for _ in 0..K {
+    for _ in 0..k {
         start += 1;
-        A.push(0); // TODO circular buffer
+        a.push(0); // TODO circular buffer
     }
 
-    for i in start..(A.len()) {
-        print!("{} ", A[i]);
+    for i in start..(a.len()) {
+        print!("{} ", a[i]);
     }
     println!("");
 }
