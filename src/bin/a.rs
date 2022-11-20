@@ -11,7 +11,7 @@ pub fn get_stdin_line() -> String {
     line.trim_end().to_string()
 }
 
-const LOG_LVL : u8 = 0;
+const LOG_LVL : u8 = 100;
 macro_rules! logstart {
     ($lvl:expr, $($arg:tt)+) => ({
         let lvl = $lvl;
@@ -66,7 +66,7 @@ fn main() {
         .map(|x| x.to_string())
         .map(|x| x.parse::<u8>().unwrap())
         .collect::<Vec<_>>();
-    assert_eq!(a.len(), n);
+    debug_assert_eq!(a.len(), n);
 
     // seats
     let mut s = Vec::new();
@@ -91,10 +91,10 @@ fn main() {
             // build a hole of 1
             let worst = latest_free + 1;
             if worst < l {
-                assert_eq!(s[worst], false);
+                debug_assert_eq!(s[worst], false);
                 s[worst] = true;
                 latest_free = worst + 1;
-                assert!(latest_free >= l || s[latest_free] == false);
+                debug_assert!(latest_free >= l || s[latest_free] == false);
                 logln!(10, "in worst place {}", worst);
             } else {
                 // first free
@@ -118,12 +118,12 @@ fn main() {
             // build a hole of 1
             let worst = latest_free + 1;
             if worst < l - 1 {
-                assert_eq!(s[worst], false);
-                assert_eq!(s[worst + 1], false);
+                debug_assert_eq!(s[worst], false);
+                debug_assert_eq!(s[worst + 1], false);
                 s[worst] = true;
                 s[worst + 1] = true;
                 latest_free = worst + 2;
-                assert!(latest_free >= l || s[latest_free] == false);
+                debug_assert!(latest_free >= l || s[latest_free] == false);
                 logln!(10, "in worst place {}+{}", worst, worst + 1);
             } else {
                 // first free place of 2
