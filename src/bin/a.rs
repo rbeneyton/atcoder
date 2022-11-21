@@ -1,7 +1,11 @@
+#![allow(non_upper_case_globals)]
+#![allow(unused_macros)]
+
 use itertools::Itertools;
-use std::io::prelude::*;
-use std::fmt;
-use std::cmp;
+// use std::io::prelude::*;
+// use std::fmt;
+// use std::cmp;
+// use std::collections::BTreeMap;
 
 pub fn get_stdin_line() -> String {
     use std::io;
@@ -11,7 +15,10 @@ pub fn get_stdin_line() -> String {
     line.trim_end().to_string()
 }
 
+#[allow(dead_code)]
+#[allow(unused_variables)]
 const LOG_LVL : u8 = 100;
+
 macro_rules! logstart {
     ($lvl:expr, $($arg:tt)+) => ({
         let lvl = $lvl;
@@ -68,81 +75,20 @@ fn main() {
         .collect::<Vec<_>>();
     debug_assert_eq!(a.len(), n);
 
-    // seats
-    let mut s = Vec::new();
-    s.resize(l, false);
+    let group_1_n = a.iter().filter(|x| **x == 1).count();
+    let group_2_n = a.iter().filter(|x| **x == 2).count();
+    assert_eq!(group_1_n + group_2_n, n);
+    assert_eq!(group_1_n + 2 * group_2_n, l);
 
-    let mut latest_free = 0;
-    let mut first_free = 0;
-
-    let mut feasable = true;
-
-    logln!(10,"{} group fo {} seats", n, l);
-
-    'scan: for i in 0..n {
-        logstart!(60,"{}: ", i);
-        for si in &s { logcont!(60, "{} ", si); }
-        logstop!(60, "");
-        logln!(10, "{}:a[{}]={}", i, i, a[i]);
-        logln!(10, "first_free:{} latest_free:{}", first_free, latest_free);
-
-        // find worst place
-        if a[i] == 1 {
-            // build a hole of 1
-            let worst = latest_free + 1;
-            if worst < l {
-                debug_assert_eq!(s[worst], false);
-                s[worst] = true;
-                latest_free = worst + 1;
-                debug_assert!(latest_free >= l || s[latest_free] == false);
-                logln!(10, "in worst place {}", worst);
-            } else {
-                // first free
-                for free in first_free..l {
-                    if s[free] == false {
-                        s[free] = true;
-                        s[free] = true;
-                        if free == first_free {
-                            first_free = free + 1;
-                        }
-                        latest_free = cmp::max(latest_free, free + 1);
-                        continue 'scan;
-                    }
-                }
-                logln!(10, "fail due to {}:a[{}]={} place worst:{} latest_free:{}", i, i, a[i], worst, latest_free);
-                feasable = false;
-                break 'scan;
-            }
+    let mut remain = l as isize;
+    for i in a.iter() {
+        let i = *i as isize;
+        if i == 2 && remain < i {
+            println!("No");
+            return;
         }
-        if a[i] == 2 {
-            // build a hole of 1
-            let worst = latest_free + 1;
-            if worst < l - 1 {
-                debug_assert_eq!(s[worst], false);
-                debug_assert_eq!(s[worst + 1], false);
-                s[worst] = true;
-                s[worst + 1] = true;
-                latest_free = worst + 2;
-                debug_assert!(latest_free >= l || s[latest_free] == false);
-                logln!(10, "in worst place {}+{}", worst, worst + 1);
-            } else {
-                // first free place of 2
-                for free in first_free..(l - 1) {
-                    if s[free] == false && s[free + 1] == false {
-                        s[free] = true;
-                        s[free + 1] = true;
-                        if free == first_free {
-                            first_free = free + 1;
-                        }
-                        latest_free = cmp::max(latest_free, free + 2);
-                        continue 'scan;
-                    }
-                }
-                logln!(10, "fail due to {}:a[{}]={} place worst:{} latest_free:{}", i, i, a[i], worst, latest_free);
-                feasable = false;
-                break 'scan;
-            }
-        }
+        remain -= 1 + i; // optimal waste
     }
-    println!("{}", if feasable { "Yes" } else { "No" });
+    // guaranteed that all N groups can take seats.
+    println!("Yes");
 }
