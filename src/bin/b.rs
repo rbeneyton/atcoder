@@ -106,12 +106,12 @@ fn main() {
         .unwrap();
     logln!(10, "start_idx:{} start_dist:{}", start_idx, start_dist);
 
-    // 3 - extend a to 3 times
+    // 3 - mirror a to 3 times
     let mut a = a;
-    a.reserve(2 * a.len());
-    for i in 0..l {
-        a[l + i] = l + a[i];
-        a[2 * l + i] = 2 * l + a[i];
+    a.resize(3 * a.len(), 0);
+    for i in 0..n {
+        a[n + i] = l + (l - a[n - 1 - i]);
+        a[2 * n + i] = 2 * l + a[i];
     }
     let a = a;
     // 3 - compute path
@@ -122,11 +122,9 @@ fn main() {
         //    S S+
         let (mut time_a, mut time_b) = (0, 0);
         // A start at start_idx until last_step
-        time_a += l - last_step - a[start_idx];
-        // B start at start_idx+1 until last_step
-        time_b += l - last_step - a[start_idx + 1];
-        // B do round to east end
-        time_b += 2 * last_step;
+        time_a += a[n - 1] - a[start_idx];
+        // B start at start_idx+1 until last_step with round to east end
+        time_b += a[n] - a[start_idx + 1];
         // A&B wait each other at last end
         let time = cmp::max(time_a, time_b);
         logln!(50, "first wait: A:{} B:{} =>{}", time_a, time_b, time);
@@ -135,9 +133,11 @@ fn main() {
 
         // W--B-A--E
         // A goes east corner then first
-        time_a += last_step + l - a[0];
+        assert_eq!(a[2 * n - 1] - a[n - 1], last_step + l - a[0]);
+        time_a += a[2 * n - 1] - a[n - 1];
         // B goes west corner then first
-        time_b += l - last_step + a[0];
+        assert_eq!(l - last_step + a[0], a[2 * n] - a[n]);
+        time_b += a[2 * n] - a[n];
         // A&B wait each other at first node
         let time = cmp::max(time_a, time_b);
         logln!(50, "second wait: A:{} B:{} =>{}", time_a, time_b, time);
@@ -146,9 +146,11 @@ fn main() {
 
         // W--A-B--E
         // A goes west corner then goes back to its start position
-        time_a += a[0] + a[start_idx];
+        assert_eq!(a[0] + a[start_idx], a[2 * n + start_idx] - a[2 * n - 1]);
+        time_a += a[2 * n + start_idx] - a[2 * n - 1];
         // B goes back to its start position
-        time_b += a[start_idx + 1] - a[0];
+        assert_eq!(a[start_idx + 1] - a[0], a[2 * n + start_idx + 1] - a[2 * n]);
+        time_b += a[2 * n + start_idx + 1] - a[2 * n];
 
         let time = cmp::max(time_a, time_b);
         logln!(50, "finish: A:{} B:{} =>{}", time_a, time_b, time);
@@ -157,16 +159,17 @@ fn main() {
     };
 
     let time_opposite_direction = {
-        let walk = |start_pos| {
-            let (mut time_a, mut time_b) = (0, 0);
-            let (mut pos_a, mut pos_b) = (start_pos, start_pos + 1);
-            loop {
-                let step_a = 
-            }
-        };
-        for start in 0..(l - 1) {
-        }
+        // let walk = |start_pos| {
+        //     let (mut time_a, mut time_b) = (0, 0);
+        //     let (mut pos_a, mut pos_b) = (start_pos, start_pos + 1);
+        //     loop {
+        //         let step_a = 
+        //     }
+        // };
+        // for start in 0..(l - 1) {
+        // }
+        10 * l
     };
 
-    println!("{}", cmp::min(time_same_direction, time_opposite_direction);
+    println!("{}", cmp::min(time_same_direction, time_opposite_direction));
 }
