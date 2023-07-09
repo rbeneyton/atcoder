@@ -69,129 +69,64 @@ pub fn get_stdin_line() -> String {
 
 #[derive(Default, Clone)]
 pub struct Node {
-    // choices_alice: Vec<usize>,
-    // choices_bob: Vec<usize>,
     va: Vec<u32>,
     vb: Vec<u32>,
-    score_alice: u32,
     score_bob: u32,
-    children: Nodes,
+    max_score_bob: u32,
 }
 pub type Nodes = Vec<Node>;
 impl Node {
     pub fn new(va: Vec<u32>, vb: Vec<u32>) -> Self {
         Self {
-            // choices_alice: Vec::new(),
-            // choices_bob: Vec::new(),
             va,
             vb,
-            score_alice: 0,
-            score_bob: 0,
-            children: Vec::new(),
+            ..Default::default()
         }
-    }
-    pub fn play(&mut self) -> u32 {
-        let mut score = 0;
-        self.play_alice();
-        for child_alice in &mut self.children {
-            child_alice.play_bob();
-            for child_bob in &mut child_alice.children {
-                score = std::cmp::max(score, child_bob.play());
-                score = std::cmp::max(score, child_bob.score_bob);
-            }
-            score = std::cmp::max(score, child_alice.score_bob);
-        }
-        score
     }
     pub fn play_alice(&mut self) {
-        for idx in 0..(self.va.len()) {
-            // let mut choices_alice_new = self.choices_alice.clone();
-            // choices_alice_new.push(idx);
+        for idx in 0..self.va.len() {
+            swap(&mut self.va[idx], &mut self.vb[idx]);
+            let score_bob = self.score_bob;
 
-            let mut va_new = self.va.clone();
-            let mut vb_new = self.vb.clone();
-            std::mem::swap(&mut va_new[idx], &mut vb_new[idx]);
+            self.play_bob();
 
-            self.children.push( Self {
-                // choices_alice : choices_alice_new,
-                // choices_bob : self.choices_bob.clone(),
-                va : va_new,
-                vb : vb_new,
-                score_alice : self.score_alice,
-                score_bob : self.score_bob,
-                children: Vec::new(),
-            });
+            // restore state
+            swap(&mut self.vb[idx], &mut self.va[idx]);
+            self.score_bob = score_bob;
         }
     }
     pub fn play_bob(&mut self) {
-        for idx in 0..(self.va.len()) {
-            let mut va_new = self.va.clone();
-            let mut vb_new = self.vb.clone();
-            let score = self.score_bob + va_new[idx];
-            // logln!(0, "score bob: {}→{}", self.score_bob, score);
-            va_new.swap_remove(idx);
-            vb_new.swap_remove(idx);
+        for idx in 0..self.va.len() {
+            let score = self.score_bob;
+            self.score_bob += self.va[idx];
+            self.max_score_bob = std::cmp::max(self.max_score_bob, self.score_bob);
+            let va_bckp = self.va[idx];
+            let vb_bckp = self.vb[idx];
+            self.va.swap_remove(idx);
+            self.vb.swap_remove(idx);
 
-            // let mut choices_bob_new = self.choices_bob.clone();
-            // choices_bob_new.push(idx);
-            self.children.push( Self {
-                // choices_alice : self.choices_alice.clone(),
-                // choices_bob : choices_bob_new,
-                va : va_new,
-                vb : vb_new,
-                score_alice : self.score_alice,
-                score_bob : score,
-                children: Vec::new(),
-            });
+            self.play_alice();
+
+            // restore state
+            self.va.push(va_bckp);
+            self.vb.push(vb_bckp);
+            let n = self.va.len() - 1;
+            debug_assert_eq!(self.va.len(), self.vb.len());
+            if idx != n {
+                self.va.swap(idx, n);
+                self.vb.swap(idx, n);
+            }
+
+            self.score_bob = score;
         }
     }
 }
 
-fn solve_c(_n : usize, va : Vec<u32>, vb : Vec<u32>) -> u32 {
+fn solve_c(va : Vec<u32>, vb : Vec<u32>) -> u32 {
     let mut root = Node::new(va, vb);
 
-    root.play()
-}
-
-fn old_solve_c(_n : usize, mut va : Vec<u32>, mut vb : Vec<u32>) -> u32 {
-    let mut score = 0;
-    loop {
-        // First, Alice chooses one of the remaining cards and flips it over.
-
-        // Alice tries to minimize Bob's score at the end of the game
-        // ⇒ chose greater card
-        let (alice_idx, alice_v) = va.iter()
-            .enumerate()
-            .filter(|(idx, _)| vb[*idx] >= va[*idx]) // do not increase value
-            .max_by(|(_, a), (_, b)| a.cmp(&b))
-            .or(Some((0, &va[0])))
-            .unwrap();
-        logln!(0, "alice pick idx:{} with v:{}, so {}→{}",
-            alice_idx, alice_v,
-            va[alice_idx], vb[alice_idx]);
-        std::mem::swap(&mut va[alice_idx], &mut vb[alice_idx]);
-
-        // Next, Bob removes one of the remaining cards.
-        // Then, Bob scores points equal to the number written on the face-up side of the removed card.
-
-        // optimal: bob peek higher card
-        let (bob_idx, bob_v) = va.iter()
-            .enumerate()
-            .max_by(|(_, a), (_, b)| a.cmp(&b))
-            .unwrap();
-        score += bob_v;
-        logln!(0, "bob pick idx:{} with v:{}, score:{}",
-            bob_idx, bob_v, score);
-
-        va.swap_remove(bob_idx);
-        vb.swap_remove(bob_idx);
-        logln!(0, "va: {}", itertools::join(va.iter().map(|x| format!("{}", x)), ","));
-        logln!(0, "vb: {}", itertools::join(va.iter().map(|x| format!("{}", x)), ","));
-
-        if va.len() == 0 {
-            return score;
-        }
-    }
+    root.play_alice();
+    root.max_score_bob
 }
 
 #[test]
@@ -231,6 +166,6 @@ fn main() {
         a.push(ai);
         b.push(bi);
     }
-    println!("{}", solve_c(n, a, b));
+    println!("{}", solve_c(a, b));
 }
 
