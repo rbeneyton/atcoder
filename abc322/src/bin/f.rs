@@ -77,23 +77,15 @@ fn main() {
     debug_assert_eq!(s.len(), n);
     let s : Vec<bool> = s.iter().map(|c| *c == '1').collect();
     dbg!(&s);
-    let mut ss = BTreeMap::new(); // key:start_idx, value:(len, what)
+    let mut ss = BTreeMap::new(); // key: idx, value: s
     {
-        let (mut start, mut len) = (0, 1);
+        ss.insert(1usize, s[0]);
         for (idx, (a, b)) in s.iter().tuple_windows().enumerate() {
-            if a == b {
-                len += 1;
-            } else {
-                ss.insert(start, (len, *a));
-                (start, len) = (idx + 1, 1);
+            if a != b {
+                ss.insert(idx + 1 + 1, *b);
             }
         }
-        ss.insert(start, (len, s[n - 1]));
         dbg!(&ss);
-        // for (a, b) in ss.iter().tuple_windows() {
-        //     debug_assert!(a.0 + a.1 == b.0);
-        //     debug_assert!(a.2 != b.2);
-        // }
     }
     for _ in 0..q {
         input! {
@@ -103,44 +95,47 @@ fn main() {
         debug_assert!(L <= n);
         debug_assert!(R >= 1);
         debug_assert!(R <= n);
-        let L = L - 1;
-        let R = R - 1;
+        let L = L;
+        let R = R;
         match c {
             1 => {
-                let left = ss.range(..=L).next_back().unwrap();
-                let left = *left.0;
+                dbg!("action 1", L, R, &ss);
+                let left = *ss.range(..=L).next_back().unwrap().0;
                 if left != L {
-                    // split
                     ss.insert(L, ss[&left]);
-                    ss.get_mut(&left).unwrap().0 = L - left;
-                    ss.get_mut(&L).unwrap().0 -= L - left;
                 }
-                let right = ss.range(R..).next().unwrap();
-                let right = *right.0;
+                let right = *ss.range(..=R).next_back().unwrap().0;
                 if right != R {
-                    // split
                     ss.insert(R, ss[&right]);
-                    ss.get_mut(&R).unwrap().0 = right - R;
-                    ss.get_mut(&right).unwrap().0 -= right - R;
                 }
+                //dbg!("expand", L, R);
+                //dbg!(&ss);
                 // invert
-                for (_, ref mut v) in ss.range(L..=R) {
-                    v.1 = !v.1;
+                for (_, v) in ss.range_mut(L..=R) {
+                    *v = !*v;
                 }
-
-                // for e in ss {
-                //     if e.0 < L { continue; }
-                //     if e.0 == L {
-                //         if e.1 < R - L {
-                //         }
-                //         break;
-                //     }
-
-                // for idx in L..=R {
-                //     s[idx] = !s[idx];
-                // }
+                //dbg!("flip", L, R);
+                //dbg!(&ss);
+                let left = *ss.range((L+1)..).next().unwrap_or((&0, &true)).0;
+                if left != 0 && ss.contains_key(&L) && ss[&left] == ss[&L] {
+                    ss.remove(&left);
+                }
+                let left = *ss.range(..L).next_back().unwrap_or((&0, &true)).0;
+                if left != 0 && ss.contains_key(&L) && ss[&left] == ss[&L] {
+                    ss.remove(&L);
+                }
+                let right = *ss.range((R+1)..).next().unwrap_or((&0, &true)).0;
+                if right != 0 && ss.contains_key(&R) && ss[&right] == ss[&R] {
+                    ss.remove(&right);
+                }
+                let right = *ss.range(..R).next_back().unwrap_or((&0, &true)).0;
+                if right != 0 && ss.contains_key(&R) && ss[&right] == ss[&R] {
+                    ss.remove(&R);
+                }
+                dbg!("after", &ss);
             },
             2 => {
+
                 // let mut n1 : usize = 0;
                 // let mut max_n1 : usize = 0;
                 // for idx in L..=R {
@@ -152,6 +147,19 @@ fn main() {
                 //     }
                 // }
                 // println!("{}", max_n1);
+                let mut max_n1 : usize = 0;
+                for ((kl, vl), (kr, vr)) in ss.tuple_windows() {
+                    if *vl {
+                        debug_assert_eq!(*vr, false);
+                        let n1 = std::cmp::max(*kr, R) - kl + 1;
+                        max_n1 = std::cmp::max(max_n1, n1);
+                    }
+                    if *kr >= R {
+                        break;
+                    }
+                }
+                dbg!("action 2", L, R, &ss, max_n1);
+                println!("{}", max_n1);
             },
             _ => panic!(),
         }
