@@ -70,9 +70,55 @@ pub fn get_stdin_line() -> String {
 // #[proconio::fastout]
 fn main() {
     input! {
-        n: usize,
-        x: usize,
-        t: [usize; n],
+        t: usize,
     }
-    println!("-1");
+    'testcase: for _ in 0..t {
+        input! {
+            n: usize,
+            src: Chars, // x
+            dst: Chars, // y
+        }
+        debug_assert_eq!(src.len(), n);
+        debug_assert_eq!(dst.len(), n);
+
+        // C cannot be generated
+        for i in 0..n {
+            if dst[i] == 'C' && src[i] != 'C' {
+                println!("No");
+                continue 'testcase;
+            }
+        }
+
+        // A's move only right
+        let (mut as_in_src_min, mut as_in_src_max, mut as_in_dst) = (0, 0, 0);
+        for i in 0..n {
+            if src[i] == 'A' {
+                as_in_src_min += 1;
+            }
+            if src[i] == 'A' || (src[i] == 'C' && dst[i] != 'C') {
+                as_in_src_max += 1;
+            }
+            if dst[i] == 'A' {
+                as_in_dst += 1;
+            }
+            if as_in_dst > as_in_src_max {
+                println!("No");
+                continue 'testcase;
+            }
+            if dst[i] == 'C' || i == n - 1 {
+                if as_in_dst < as_in_src_min {
+                    println!("No");
+                    continue 'testcase;
+                }
+            }
+            // reset
+            if dst[i] == 'C' {
+                as_in_src_min = 0;
+                as_in_src_max = 0;
+                as_in_dst = 0;
+            }
+        }
+
+        println!("Yes");
+    }
 }

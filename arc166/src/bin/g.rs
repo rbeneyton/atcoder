@@ -3,6 +3,7 @@
 #![allow(unused_imports)]
 #![allow(unused_macros)]
 #![allow(dead_code)]
+#![allow(non_snake_case)]
 
 use std::{
     collections::*,
@@ -71,8 +72,5 @@ pub fn get_stdin_line() -> String {
 fn main() {
     input! {
         n: usize,
-        x: usize,
-        t: [usize; n],
     }
-    println!("-1");
 }
