@@ -1,9 +1,9 @@
-# $ rustup toolchain install 1.70.0
-# $ rustup override set 1.70.0
-# set edition = "2021"
-#
-# cd src/bin; for i in b c d e f; cp a.rs $i.rs; end ; cd -
+[package]
+name = "abc325"
+version = "0.1.0"
+edition = "2021"
 
+# dependencies added to new project
 [dependencies]
 ac-library-rs = "=0.1.1"
 once_cell = "=1.18.0"
@@ -67,3 +67,7 @@ proconio = "=0.4.5"
 text_io = "=0.1.12"
 rustc-hash = "=1.1.0"
 smallvec = "=1.11.0"
+
+[profile.release]
+lto = false
+panic = 'abort'
