@@ -87,32 +87,67 @@ fn main() {
     let n = nodes.len();
 
     // compute disance matrix triangle
-    let mut distances = Vec::new();
-    distances.resize(n * n, false);
-    let idx = |i, j| i * n + j;
-    for i in 0..n {
+    let mut neighs = Vec::new();
+    const MAX_NEIGH : usize = 9;
+    #[derive(Default, Copy, Clone)]
+    struct Neigh {
+        v : [usize; MAX_NEIGH],
+        n : usize,
+    }
+    impl Neigh {
+        fn push(&mut self, o: usize) {
+            self.v[self.n] = o;
+            self.n += 1;
+            debug_assert!(self.n < MAX_NEIGH);
+        }
+        // fn contains(&self, o: usize) -> bool {
+        //     for i in 0..self.n {
+        //         if self.v[i] == o {
+        //             true
+        //         }
+        //     }
+        //     false
+        // }
+    }
+    neighs.resize(n, Neigh::default());
+    'scani: for i in 0..n {
         let ii = &nodes[i];
-        for j in (i + 1)..n {
+        for j in 0..n {
+            if j == i { continue; }
             let jj = &nodes[j];
-            distances[idx(i, j)] = std::cmp::max((ii.0 - jj.0).abs(), (ii.1 - jj.1).abs()) <= 1;
+            if (ii.0 - jj.0).abs() > 1 || (ii.1 - jj.1).abs() > 1 { continue; }
+            neighs[i].push(j);
+            if neighs[i].n == MAX_NEIGH { continue 'scani; }
         }
     }
     drop(nodes);
 
+    // for i in 0..n {
+    //     eprint!("{i}:");
+    //     for j in (i + 1)..n {
+    //         if is_neigh(i, j) { eprint!("{j} "); }
+    //     }
+    //     eprintln!("");
+    // }
+
     let mut clusters = (0..n).collect::<Vec<_>>();
     'scan: loop {
-        // eprintln!("{}", itertools::join(clusters.iter().map(ToString::to_string), " "));
+        eprintln!("{}", itertools::join(clusters.iter().map(ToString::to_string), " "));
         for i in 0..n {
-            for j in (i + 1)..n {
-                if clusters[j] != clusters[i] && distances[idx(i, j)] {
+            for ni in 0..neighs[i].n {
+                let j = neighs[i].v[ni];
+                if clusters[j] != clusters[i] {
                     let clu = std::cmp::min(clusters[j], clusters[i]);
-                    // eprintln!("{j}:{}→{} because {i}", clusters[j], clu);
-                    for k in 0..n {
-                        if clusters[k] == clusters[i] || clusters[k] == clusters[j] {
-                            clusters[k] = clu;
+                    eprintln!("{j}:{}→{} because {i}:{}", clusters[j], clu, clusters[i]);
+                    clusters[j] = clu;
+                    if clusters[i] != clu {
+                        for k in 0..n {
+                            if clusters[k] == clusters[i] {
+                                clusters[k] = clu;
+                            }
                         }
+                        continue 'scan;
                     }
-                    continue 'scan;
                 }
             }
         }
