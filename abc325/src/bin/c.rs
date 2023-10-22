@@ -72,7 +72,15 @@ fn main() {
         h: isize, // h rows
         w: isize, // w columns
     }
-    let mut nodes = Vec::new();
+    let n = h * w;
+    let mut map = Vec::new();
+    map.resize(n as usize, 0usize);
+    let idx = |row, col| {
+        debug_assert!(row >= 0 && row < h);
+        debug_assert!(col >= 0 && col < w);
+        (row * w + col) as usize
+    };
+    let mut nc = 1;
     for row in 0..h {
         input! {
             line: Chars,
@@ -80,81 +88,45 @@ fn main() {
         debug_assert_eq!(line.len(), w as usize);
         for col in 0..w {
             if line[col as usize] == '#' {
-                nodes.push((row, col));
+                map[idx(row, col)] = nc;
+                nc += 1;
             }
         }
     }
-    let n = nodes.len();
+    dbg!(&nc);
 
-    // compute disance matrix triangle
-    let mut neighs = Vec::new();
-    const MAX_NEIGH : usize = 9;
-    #[derive(Default, Copy, Clone)]
-    struct Neigh {
-        v : [usize; MAX_NEIGH],
-        n : usize,
-    }
-    impl Neigh {
-        fn push(&mut self, o: usize) {
-            self.v[self.n] = o;
-            self.n += 1;
-            debug_assert!(self.n < MAX_NEIGH);
-        }
-        // fn contains(&self, o: usize) -> bool {
-        //     for i in 0..self.n {
-        //         if self.v[i] == o {
-        //             true
-        //         }
-        //     }
-        //     false
-        // }
-    }
-    neighs.resize(n, Neigh::default());
-    'scani: for i in 0..n {
-        let ii = &nodes[i];
-        for j in 0..n {
-            if j == i { continue; }
-            let jj = &nodes[j];
-            if (ii.0 - jj.0).abs() > 1 || (ii.1 - jj.1).abs() > 1 { continue; }
-            neighs[i].push(j);
-            if neighs[i].n == MAX_NEIGH { continue 'scani; }
-        }
-    }
-    drop(nodes);
-
-    // for i in 0..n {
-    //     eprint!("{i}:");
-    //     for j in (i + 1)..n {
-    //         if is_neigh(i, j) { eprint!("{j} "); }
-    //     }
-    //     eprintln!("");
-    // }
-
-    let mut clusters = (0..n).collect::<Vec<_>>();
-    'scan: loop {
-        eprintln!("{}", itertools::join(clusters.iter().map(ToString::to_string), " "));
-        for i in 0..n {
-            for ni in 0..neighs[i].n {
-                let j = neighs[i].v[ni];
-                if clusters[j] != clusters[i] {
-                    let clu = std::cmp::min(clusters[j], clusters[i]);
-                    eprintln!("{j}:{}→{} because {i}:{}", clusters[j], clu, clusters[i]);
-                    clusters[j] = clu;
-                    if clusters[i] != clu {
-                        for k in 0..n {
-                            if clusters[k] == clusters[i] {
-                                clusters[k] = clu;
+    let mut clusters = (0..nc).collect::<Vec<_>>();
+    loop {
+        let mut moved = 0;
+        for row in 0..h {
+            for col in 0..w {
+                let i = map[idx(row, col)];
+                if i == 0 { continue; }
+                for nrow in [row - 1, row, row + 1] {
+                    if nrow < 0 || nrow >= h { continue; }
+                    for ncol in [col - 1, col, col + 1] {
+                        if ncol < 0 || ncol >= w { continue; }
+                        let j = map[idx(nrow, ncol)];
+                        if j == 0 { continue; }
+                        if clusters[i] != clusters[j] {
+                            for k in 1..nc {
+                                if clusters[k] == clusters[j] {
+                                    clusters[k] = clusters[i];
+                                }
                             }
+                            moved += 1;
                         }
-                        continue 'scan;
                     }
                 }
             }
         }
-        break;
+        if moved == 0 {
+            break;
+        }
     }
 
-    let clusters = clusters.iter().collect::<HashSet<_>>();
+    let mut clusters = clusters.iter().collect::<HashSet<_>>();
+    clusters.remove(&0);
     let r = clusters.len();
 
     println!("{r}");
