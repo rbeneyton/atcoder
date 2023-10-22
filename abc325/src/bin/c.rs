@@ -69,84 +69,58 @@ pub fn get_stdin_line() -> String {
 
 fn main() {
     input! {
-        h: usize, // h rows
-        w: usize, // w columns
+        h: isize, // h rows
+        w: isize, // w columns
     }
-    // add borders
-    let h_ext = h + 2;
-    let w_ext = w + 2;
-
-    let n = h_ext * w_ext;
-    let mut g = Vec::new();
-    g.resize(n, 0u32);
-    let idx = |row, col| {
-        debug_assert!(row < h_ext);
-        debug_assert!(col < w_ext);
-        row * w_ext + col
-    };
-    let mut id = 1;
+    let mut nodes = Vec::new();
     for row in 0..h {
         input! {
             line: Chars,
         }
-        debug_assert_eq!(line.len(), w);
+        debug_assert_eq!(line.len(), w as usize);
         for col in 0..w {
-            if line[col] == '#' {
-                g[idx(row + 1, col + 1)] = id;
-                id += 1;
+            if line[col as usize] == '#' {
+                nodes.push((row, col));
             }
         }
     }
+    let n = nodes.len();
 
-    // dbg!(&id);
+    // compute disance matrix triangle
+    let mut distances = Vec::new();
+    distances.resize(n * n, false);
+    let idx = |i, j| i * n + j;
+    for i in 0..n {
+        let ii = &nodes[i];
+        for j in (i + 1)..n {
+            let jj = &nodes[j];
+            distances[idx(i, j)] = std::cmp::max((ii.0 - jj.0).abs(), (ii.1 - jj.1).abs()) <= 1;
+        }
+    }
+    drop(nodes);
 
-    // interacting coalescing
-    let mut tmp = Vec::new();
+    let mut clusters = (0..n).collect::<Vec<_>>();
     'scan: loop {
-        let mut modified = 0;
-        for row in 1..=h {
-            for col in 1..=w {
-                let id = g[idx(row, col)];
-                if id == 0 { continue; }
-                tmp.clear();
-
-                for nrow in [row - 1, row, row + 1] {
-                    for ncol in [col - 1, col, col + 1] {
-                        let did = g[idx(nrow, ncol)];
-                        if did == 0 { continue; }
-                        tmp.push((nrow, ncol));
-                    }
-                }
-                if tmp.len() > 1 {
-                    let id_min = tmp.iter().map(|(nrow, ncol)| g[idx(*nrow, *ncol)]).min().unwrap();
-                    let id_max = tmp.iter().map(|(nrow, ncol)| g[idx(*nrow, *ncol)]).max().unwrap();
-                    if id_min != id_max {
-                        for (row, col) in &tmp {
-                            g[idx(*row, *col)] = id_min;
+        // eprintln!("{}", itertools::join(clusters.iter().map(ToString::to_string), " "));
+        for i in 0..n {
+            for j in (i + 1)..n {
+                if clusters[j] != clusters[i] && distances[idx(i, j)] {
+                    let clu = std::cmp::min(clusters[j], clusters[i]);
+                    // eprintln!("{j}:{}→{} because {i}", clusters[j], clu);
+                    for k in 0..n {
+                        if clusters[k] == clusters[i] || clusters[k] == clusters[j] {
+                            clusters[k] = clu;
                         }
-                        modified += 1;
                     }
+                    continue 'scan;
                 }
             }
         }
-        if modified == 0 {
-            break;
-        }
+        break;
     }
 
-    if false {
-        for row in 0..h_ext {
-            for col in 0..w_ext {
-                let id = g[idx(row, col)];
-                let id = if id > 0 { format!("{:>5}", id) } else { format!("    .") };
-                print!("{id}");
-            }
-            println!("");
-        }
-    }
-    let ids = g.iter().collect::<std::collections::HashSet<_>>();
-    debug_assert!(ids.contains(&0));
-    let r = ids.len() - 1;
+    let clusters = clusters.iter().collect::<HashSet<_>>();
+    let r = clusters.len();
 
     println!("{r}");
 }
